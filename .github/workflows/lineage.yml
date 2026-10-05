@@ -1,0 +1,122 @@
+name: Build LineageOS 15.1 (lgl23)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build lineage-15.1 for LG G Flex (LGL23)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 350
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 4096
+          swap-size-mb: 4096
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+
+      - name: Checkout device tree
+        uses: actions/checkout@v4
+        with:
+          path: devicetree
+
+      - name: Install build dependencies
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git curl ca-certificates gnupg \
+            bc bison flex gperf build-essential zip unzip \
+            zlib1g-dev libncurses5 libncurses5-dev \
+            libxml2-utils xsltproc libssl-dev \
+            dosfstools mtools rsync \
+            libc6-i386 lib32z1 lib32stdc++6 \
+            gcc-multilib g++-multilib libc6-dev-i386 \
+            lib32ncurses5-dev lib32readline-dev \
+            libtinfo5 squashfs-tools pngcrush schedtool \
+            libsdl1.2-dev lzop liblz4-tool imagemagick
+
+      - name: Setup Python 2.7 (legacy 15.1 build)
+        run: |
+          set -e
+          source /usr/share/miniconda/etc/profile.d/conda.sh
+          conda create -y -p /opt/py2 python=2.7
+          ln -sf /opt/py2/bin/python2.7 /opt/py2/bin/python2
+          /opt/py2/bin/python --version
+
+      - name: Install repo tool
+        run: |
+          set -e
+          mkdir -p "$HOME/bin"
+          curl -sSL https://storage.googleapis.com/git-repo-downloads/repo -o "$HOME/bin/repo-real"
+          printf '#!/bin/sh\nexec python3 %s "$@"\n' "$HOME/bin/repo-real" > "$HOME/bin/repo"
+          chmod a+rx "$HOME/bin/repo" "$HOME/bin/repo-real"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          git config --global user.name "lgl23-ci"
+          git config --global user.email "lgl23-ci@users.noreply.github.com"
+          git config --global color.ui false
+          git config --global --add safe.directory '*'
+
+      - name: Repo init and sync (LineageOS 15.1)
+        run: |
+          set -e
+          repo init -u https://github.com/LineageOS/android.git -b lineage-15.1 \
+            --git-lfs --no-clone-bundle --depth=1
+          mkdir -p .repo/local_manifests
+          cp "$GITHUB_WORKSPACE/devicetree/local_manifests/lgl23.xml" .repo/local_manifests/
+          repo sync -c -j"$(nproc)" --force-sync --no-clone-bundle --no-tags
+          df -h
+
+      - name: Add LGL23 device tree
+        run: |
+          set -e
+          mkdir -p device/lge
+          cp -a "$GITHUB_WORKSPACE/devicetree/device/lge/lgl23" device/lge/
+          ls -la device/lge/lgl23
+
+      - name: Build LineageOS
+        run: |
+          set +e
+          export PATH="/opt/py2/bin:$PATH"
+          export JAVA_HOME="${JAVA_HOME_8_X64:?JAVA_HOME_8_X64 not set}"
+          export ANDROID_JAVA_HOME="$JAVA_HOME"
+          export LC_ALL=C
+          export ALLOW_MISSING_DEPENDENCIES=true
+          source build/envsetup.sh
+          lunch lineage_lgl23-userdebug
+          make -j"$(nproc)" bacon
+          rc=$?
+          echo "make exit code: $rc"
+          echo "=== output ==="
+          ls -la out/target/product/lgl23/ || true
+          exit $rc
+
+      - name: Collect build outputs
+        if: always()
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          OUT=out/target/product/lgl23
+          for f in boot.img recovery.img system.img dt.img; do
+            [ -f "$OUT/$f" ] && cp -v "$OUT/$f" "$GITHUB_WORKSPACE/artifacts/" || true
+          done
+          cp -v "$OUT"/lineage-*.zip "$GITHUB_WORKSPACE/artifacts/" 2>/dev/null || true
+          ls -l "$GITHUB_WORKSPACE/artifacts" || true
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lgl23-lineageos-15.1
+          path: ${{ github.workspace }}/artifacts/
+          if-no-files-found: warn
+          retention-days: 14

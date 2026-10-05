@@ -1,0 +1,9 @@
+#
+# System.prop for LGL23 (LG G Flex, KDDI / au)
+#
+
+# Display: 6.0" 720x1280 -> 320 dpi
+ro.sf.lcd_density=320
+
+# RIL
+telephony.lteOnGsmDevice=1

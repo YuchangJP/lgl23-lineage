@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Local manifest to build LineageOS 15.1 for the LG G Flex (KDDI/au) LGL23.
+
+  Base manifest: https://github.com/LineageOS/android -b lineage-15.1
+  Device common / kernel / vendor blobs come from the lge-devs org (G Flex "zee"),
+  which already carries:
+    * kernel/lge/msm8974 arch/arm/configs/lineageos_lgl23_defconfig
+    * kernel/lge/msm8974 arch/arm/boot/dts/lge/msm8974-z/msm8974-z-kddi
+    * device/lge/z-common  (G Flex common tree, lineage-15.1)
+    * vendor/lge           (proprietary_vendor_lge_zee: z-common + f340l blobs)
+-->
+<manifest>
+
+  <remote name="lge-devs" fetch="https://github.com/lge-devs/" revision="lineage-15.1" />
+  <remote name="ln"       fetch="https://github.com/LineageOS/" revision="lineage-15.1" />
+
+  <!-- Common device tree, kernel (galbi / msm8974) and vendor blobs -->
+  <project name="android_device_lge_z-common" path="device/lge/z-common" remote="lge-devs" />
+  <project name="android_kernel_lge_msm8974"  path="kernel/lge/msm8974"  remote="lge-devs" />
+  <project name="proprietary_vendor_lge_zee"  path="vendor/lge"          remote="lge-devs" />
+
+  <!-- Extra dependencies required by z-common (see z-lineage-15.1.xml) -->
+  <project name="android_device_qcom_common"                path="device/qcom/common"                 remote="ln" />
+  <project name="android_external_stlport"                  path="external/stlport"                   remote="ln" />
+  <project name="android_external_sony_boringssl-compat"    path="external/sony/boringssl-compat"     remote="ln" />
+  <project name="android_packages_apps_FlipFlap"            path="packages/apps/FlipFlap"             remote="ln" />
+  <project name="android_packages_resources_devicesettings" path="packages/resources/devicesettings"  remote="ln" />
+  <project name="android_external_busybox"                  path="external/busybox"                   remote="ln" />
+
+  <!-- dtbToolLineage (host tool used by device/lge/z-common/releasetools/mkbootimg.mk) -->
+  <project name="android_system_tools_dtbtool"              path="system/tools/dtbtool"               remote="ln" />
+
+</manifest>

@@ -1,0 +1,6 @@
+[
+ {
+   "repository": "android_device_lge_z-common",
+   "target_path": "device/lge/z-common"
+ }
+]
