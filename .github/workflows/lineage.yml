@@ -13,22 +13,30 @@ jobs:
     name: Build lineage-15.1 for LG G Flex (LGL23)
     runs-on: ubuntu-22.04
     timeout-minutes: 350
+    env:
+      DEBIAN_FRONTEND: noninteractive
     steps:
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 4096
-          swap-size-mb: 4096
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-
       - name: Checkout device tree
         uses: actions/checkout@v4
         with:
           path: devicetree
+
+      - name: Free up disk space
+        run: |
+          set -e
+          echo "Disk before:"
+          df -h /
+          sudo rm -rf \
+            /usr/share/dotnet \
+            /usr/local/lib/android \
+            /opt/ghc \
+            /opt/hostedtoolcache/CodeQL \
+            /opt/hostedtoolcache/Java_Adopt_jdk \
+            /usr/local/share/boost \
+            /usr/share/swift \
+            /usr/local/lib/node_modules || true
+          echo "Disk after:"
+          df -h /
 
       - name: Install build dependencies
         run: |
@@ -37,14 +45,15 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             git curl ca-certificates gnupg \
             bc bison flex gperf build-essential zip unzip \
-            zlib1g-dev libncurses5 libncurses5-dev \
+            zlib1g-dev libncurses5 libncurses5-dev libtinfo5 \
             libxml2-utils xsltproc libssl-dev \
             dosfstools mtools rsync \
             libc6-i386 lib32z1 lib32stdc++6 \
             gcc-multilib g++-multilib libc6-dev-i386 \
             lib32ncurses5-dev lib32readline-dev \
-            libtinfo5 squashfs-tools pngcrush schedtool \
-            libsdl1.2-dev lzop liblz4-tool imagemagick
+            squashfs-tools pngcrush schedtool \
+            libsdl1.2-dev lz4 imagemagick
+          df -h /
 
       - name: Setup Python 2.7 (legacy 15.1 build)
         run: |
@@ -75,7 +84,7 @@ jobs:
           mkdir -p .repo/local_manifests
           cp "$GITHUB_WORKSPACE/devicetree/local_manifests/lgl23.xml" .repo/local_manifests/
           repo sync -c -j"$(nproc)" --force-sync --no-clone-bundle --no-tags
-          df -h
+          df -h /
 
       - name: Add LGL23 device tree
         run: |
@@ -87,6 +96,7 @@ jobs:
       - name: Build LineageOS
         run: |
           set +e
+          unset ANDROID_HOME ANDROID_SDK_ROOT
           export PATH="/opt/py2/bin:$PATH"
           export JAVA_HOME="${JAVA_HOME_8_X64:?JAVA_HOME_8_X64 not set}"
           export ANDROID_JAVA_HOME="$JAVA_HOME"
