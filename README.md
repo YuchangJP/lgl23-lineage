@@ -44,10 +44,31 @@ Push to `main` (or run the workflow manually). The workflow:
 5. `lunch lineage_lgl23-userdebug && make bacon`,
 6. uploads `lineage-15.1-*-UNOFFICIAL-lgl23.zip` (and images) as artifacts.
 
+## Build status
+
+The GitHub Actions build **succeeds**. Artifacts produced:
+`lineage-15.1-*-UNOFFICIAL-lgl23.zip` (~370 MB), `boot.img` (~11 MB),
+`recovery.img`, `dt.img`.
+
+Fixes the workflow applies automatically so the 2018 tree builds on a modern
+(2026) host:
+
+- kernel host tools need `-fcommon` (gcc >= 10 defaults to `-fno-common`;
+  otherwise `dtc` fails to link with "multiple definition of `yylloc`"),
+- the kernel's `scripts/gcc-wrapper.py` is made a passthrough (it turned any
+  non-whitelisted warning, e.g. `binder.c:2781 -Wformat`, into a hard error),
+- Java 8's `jdk.tls.disabledAlgorithms` must drop TLSv1/1.1 or the Jack server
+  dies with SSL errors,
+- `device/lge/z-common` is taken from a fork that adds `lgl23` to the device
+  filter in `Android.mk` (otherwise its modules, e.g. `librecovery_updater_z`,
+  are never defined).
+
 ## Status / caveats
 
-- **Bring-up attempt.** The ROM boots the common msm8974 stack; hardware support
+- **Bring-up.** The ROM boots the common msm8974 stack; hardware support is
   inherited from z-common.
+- The generated `recovery.img` is ~16.8 MB, slightly larger than the 16 MiB
+  recovery partition — flash TWRP there instead. `boot.img` fits.
 - **Proprietary blobs** currently come from the **f340l (Korean G Flex)** vendor
   tree as a fallback — LGL23 stock blobs have not been extracted yet. Replacing
   them with blobs from `by-name/system` of the LGL23 dump is the next step
