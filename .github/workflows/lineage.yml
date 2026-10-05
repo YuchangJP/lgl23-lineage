@@ -86,15 +86,21 @@ jobs:
           repo sync -c -j"$(nproc)" --force-sync --no-clone-bundle --no-tags
           df -h /
 
-      - name: Add LGL23 device tree and patch kernel host flags
+      - name: Add LGL23 device tree and patch kernel
         run: |
           set -e
           mkdir -p device/lge
           cp -a "$GITHUB_WORKSPACE/devicetree/device/lge/lgl23" device/lge/
-          # Linux 3.4 host tools (dtc) fail to link on gcc>=10 because of
-          # -fno-common (multiple definition of yylloc). Add -fcommon.
-          sed -i 's/^HOSTCFLAGS   = -Wall/HOSTCFLAGS   = -fcommon -Wall/' kernel/lge/msm8974/Makefile
-          grep -n '^HOSTCFLAGS' kernel/lge/msm8974/Makefile
+          K=kernel/lge/msm8974
+          # (1) Linux 3.4 host tools (dtc) fail to link on gcc>=10 because of
+          #     -fno-common (multiple definition of yylloc). Add -fcommon.
+          sed -i 's/^HOSTCFLAGS   = -Wall/HOSTCFLAGS   = -fcommon -Wall/' "$K/Makefile"
+          # (2) scripts/gcc-wrapper.py turns any non-whitelisted warning into a
+          #     hard error; newer compilers emit many. Make it a passthrough.
+          printf '#!/bin/sh\nexec "$@"\n' > "$K/scripts/gcc-wrapper.py"
+          chmod +x "$K/scripts/gcc-wrapper.py"
+          grep -n '^HOSTCFLAGS' "$K/Makefile"
+          head -2 "$K/scripts/gcc-wrapper.py"
           ls -la device/lge/lgl23
 
       - name: Patch Java 8 TLS for Jack (LineageOS 15.1)
