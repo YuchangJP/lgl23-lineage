@@ -134,6 +134,25 @@ jobs:
           ls -la out/target/product/lgl23/ || true
           exit $rc
 
+      - name: Loki-sign boot image and repack ROM (JB bootloader)
+        if: always()
+        run: |
+          set -e
+          OUT=out/target/product/lgl23
+          ABOOT="$GITHUB_WORKSPACE/devicetree/device/lge/lgl23/prebuilt/aboot.img"
+          if [ ! -f "$OUT/boot.img" ]; then echo "no boot.img, skipping"; exit 0; fi
+          git clone --depth 1 https://github.com/djrbliss/loki.git /tmp/loki
+          make -C /tmp/loki host LDFLAGS="-lpthread" -j"$(nproc)"
+          /tmp/loki/loki_tool patch boot "$ABOOT" "$OUT/boot.img" "$OUT/boot-loki.img"
+          /tmp/loki/loki_tool patch recovery "$ABOOT" "$OUT/recovery.img" "$OUT/recovery-loki.img" || true
+          # The stock LGL23 aboot is a Jelly Bean (loki, not bump) bootloader, so a
+          # bumped image is rejected. Replace boot.img inside the ROM zip with the
+          # loki-patched image so the package is directly flashable.
+          cd "$OUT"
+          cp boot-loki.img boot.img
+          zip -q -X "$(ls lineage-*.zip)" boot.img
+          ls -l boot-loki.img recovery-loki.img boot.img "$(ls lineage-*.zip)"
+
       - name: Collect build outputs
         if: always()
         run: |

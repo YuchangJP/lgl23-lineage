@@ -73,9 +73,15 @@ Fixes the workflow applies automatically so the 2018 tree builds on a modern
   tree as a fallback — LGL23 stock blobs have not been extracted yet. Replacing
   them with blobs from `by-name/system` of the LGL23 dump is the next step
   (au-specific RIL/radio, sensors).
-- **Boot image signing:** z-common's `releasetools/mkbootimg.mk` signs
-  boot/recovery with **Open Bump** (`open_bump.py`). LGL23's stock aboot
-  (`LGL2310d`) is also supported by the legacy `loki` tool.
+- **Boot image signing (important):** the stock LGL23 aboot is a **Jelly Bean**
+  bootloader (`LGL2310d` is in loki's supported list), therefore it accepts
+  **loki**, not **bump** (bump targets KitKat+ bootloaders; "only JB supports
+  loki"). On top of that, z-common's `open_bump.py` runs with its crypto path
+  disabled (`POC=False`) and only appends a 16-byte magic, so the raw build is
+  effectively **unsigned** — flashing it makes the phone drop to **EDL/9008** on
+  boot. The workflow therefore **loki-patches `boot.img` with the stock
+  `prebuilt/aboot.img` and rewrites it inside the ROM zip**, and also emits
+  `boot-loki.img` as a separate artifact.
 - **Not expected to work:** ワンセグ (ISDB-T/OneSeg), フルセグ, Felica/おサイフケータイ.
 - Bootloader is locked; flashing requires a bump/loki-signed image.
 
