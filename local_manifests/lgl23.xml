@@ -26,7 +26,6 @@
   <project name="android_external_sony_boringssl-compat"    path="external/sony/boringssl-compat"     remote="ln" />
   <project name="android_packages_apps_FlipFlap"            path="packages/apps/FlipFlap"             remote="ln" />
   <project name="android_packages_resources_devicesettings" path="packages/resources/devicesettings"  remote="ln" />
-  <project name="android_external_busybox"                  path="external/busybox"                   remote="ln" />
 
   <!-- dtbToolLineage: system/tools/dtbtool is already provided by the
        LineageOS 15.1 manifest (snippets/lineage.xml), do not add it here. -->
