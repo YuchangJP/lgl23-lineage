@@ -13,10 +13,12 @@
 <manifest>
 
   <remote name="lge-devs" fetch="https://github.com/lge-devs/" revision="lineage-15.1" />
+  <remote name="yuchang"  fetch="https://github.com/YuchangJP/" revision="lineage-15.1" />
   <remote name="ln"       fetch="https://github.com/LineageOS/" revision="lineage-15.1" />
 
-  <!-- Common device tree, kernel (galbi / msm8974) and vendor blobs -->
-  <project name="android_device_lge_z-common" path="device/lge/z-common" remote="lge-devs" />
+  <!-- Common device tree (fork: enables z-common modules for lgl23),
+       kernel (galbi / msm8974) and vendor blobs -->
+  <project name="android_device_lge_z-common" path="device/lge/z-common" remote="yuchang" />
   <project name="android_kernel_lge_msm8974"  path="kernel/lge/msm8974"  remote="lge-devs" />
   <project name="proprietary_vendor_lge_zee"  path="vendor/lge"          remote="lge-devs" />
 
